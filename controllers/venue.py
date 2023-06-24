@@ -2,6 +2,8 @@ from models import db, Venue, Show
 from flask import Flask, render_template, request,jsonify, make_response, Response, flash, redirect, url_for
 from flask_wtf import Form
 from forms import VenueForm
+from sqlalchemy import delete
+
 
 def venues():
   # TODO [X]: replace with real venues data.
@@ -87,7 +89,7 @@ def create_venue_submission():
   return render_template('pages/home.html')
 
 def delete_venue(venue_id):
-  # TODO [ ]: Complete this endpoint for taking a venue_id, and using
+  # TODO [X]: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   db.session.begin()
   response = make_response(
@@ -95,10 +97,8 @@ def delete_venue(venue_id):
     200
   )
   try:
-    # TODO [ ] REMOVE ME
-    venue_id = 99
-    m2m = f'delete from public."Show" where venue_id = {venue_id}'
-    qry = f'delete from public."Venue" where id = {venue_id}'
+    m2m = delete(Show).where(Show.venue_id == venue_id)
+    qry = delete(Venue).where(Venue.id == venue_id)
     db.session.execute(m2m)
     db.session.execute(qry)
     db.session.commit()

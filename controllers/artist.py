@@ -3,6 +3,7 @@ from flask import Flask, render_template,make_response, jsonify, request, Respon
 from flask_wtf import Form
 from forms import ArtistForm
 from sqlalchemy.orm import load_only
+from sqlalchemy import delete
 #  Artists
 #  ----------------------------------------------------------------
 def artists():
@@ -74,7 +75,7 @@ def create_artist_submission():
   return render_template('pages/home.html')
 
 def delete_artist(artist_id):
-  # TODO [ ]: Complete this endpoint for taking a venue_id, and using
+  # TODO [X]: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   db.session.begin()
   response = make_response(
@@ -82,10 +83,9 @@ def delete_artist(artist_id):
     200
   )
   try:
-    # TODO [ ] REMOVE ME
-    artist_id = 99
-    m2m = f'delete from public."Show" where artist_id = {artist_id}'
-    qry = f'delete from public."Artist" where id = {artist_id}'
+    m2m = delete(Show).where(Show.artist_id == artist_id)
+    qry = delete(Artist).where(Artist.id == artist_id)
+
     db.session.execute(m2m)
     db.session.execute(qry)
     db.session.commit()

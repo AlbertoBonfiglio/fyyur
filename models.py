@@ -46,13 +46,13 @@ db = SQLAlchemy()
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
-# TODO [ ]:  Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+# TODO [X]:  Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 class Venue(db.Model): # type: ignore
     __tablename__ = 'Venue'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
+    name = db.Column(db.String, nullable=False, index=True)
+    city = db.Column(db.String(120), nullable=False, index=True)
+    state = db.Column(db.String(120),nullable=False, index=True)
     address = db.Column(db.String(120))
     phone = db.Column(db.String(36),nullable=False)
     
@@ -63,6 +63,7 @@ class Venue(db.Model): # type: ignore
     
     seeking_talent = db.Column(db.Boolean, nullable=False, default=True)
     seeking_description = db.Column(db.String, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=func.now())
     
     #relationships
     past_shows = db.relationship('Show', 
@@ -93,9 +94,9 @@ class Venue(db.Model): # type: ignore
 class Artist(db.Model): # type: ignore
     __tablename__ = 'Artist'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
+    name = db.Column(db.String, nullable=False, index=True)
+    city = db.Column(db.String(120),nullable=False, index=True)
+    state = db.Column(db.String(120),nullable=False, index=True)
     phone = db.Column(db.String(36), nullable=False)
     
     image_link = db.Column(db.String(500))
@@ -105,6 +106,7 @@ class Artist(db.Model): # type: ignore
     
     seeking_venue = db.Column(db.Boolean, nullable=False, default=True)
     seeking_description = db.Column(db.String, nullable=False)
+    created_at = db.Column(db.DateTime, server_default=func.now())
     
     #relationships
     past_shows = db.relationship('Show', 
