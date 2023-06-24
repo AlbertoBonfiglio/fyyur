@@ -1,5 +1,5 @@
 from models import db, Artist, Venue, Show
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template,make_response, jsonify, request, Response, flash, redirect, url_for
 from flask_wtf import Form
 from forms import ArtistForm
 from sqlalchemy.orm import load_only
@@ -74,4 +74,31 @@ def create_artist_submission():
   return render_template('pages/home.html')
 
 def delete_artist(artist_id):
-  raise Exception('Not implemented yet')
+  # TODO [ ]: Complete this endpoint for taking a venue_id, and using
+  # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+  db.session.begin()
+  response = make_response(
+    jsonify({"redirect": url_for('index') }),
+    200
+  )
+  try:
+    # TODO [ ] REMOVE ME
+    artist_id = 99
+    m2m = f'delete from public."Show" where artist_id = {artist_id}'
+    qry = f'delete from public."Artist" where id = {artist_id}'
+    db.session.execute(m2m)
+    db.session.execute(qry)
+    db.session.commit()
+    
+    flash(f'Artist {artist_id} deleted.')    
+  except Exception as err:
+    flash(f'An error occurred. Artist {artist_id} could not be deleted.')
+    response = make_response(
+      jsonify({"err": getattr(err, 'message', repr(err)) }),
+      500
+    )
+    db.session.rollback()
+  finally:
+    db.session.close()
+  response.headers["Content-Type"] = "application/json"  
+  return response

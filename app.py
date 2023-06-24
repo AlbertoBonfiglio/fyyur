@@ -1,23 +1,24 @@
+#----------------------------------------------------------------------------# 
+# REMOVE ME
+# source /home/darthbert/workspaces/udacity/fyyur/.venv/bin/activate
+#----------------------------------------------------------------------------#
+
 #----------------------------------------------------------------------------#
 # Imports
 #----------------------------------------------------------------------------#
-
-import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template
 from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
-from flask_wtf import Form
 from forms import *
 from sqlalchemyseeder import ResolvingSeeder
 from sqlalchemy.sql import func
 from models import db, Venue, Artist, Show
 
-import controllers.venues as vc
+import controllers.venue as vc
 import controllers.artist as ac
 import controllers.show as sc
 
@@ -62,7 +63,7 @@ app.add_url_rule('/shows', view_func=sc.shows)
 #app.add_url_rule('/shows/<int:show_id>', view_func=sc.show_show)
 #app.add_url_rule('/shows/<int:show_id>/edit', view_func=sc.show_show, methods=['GET'])
 #app.add_url_rule('/shows/<int:show_id>/edit', view_func=sc.show_show, methods=['POST'])
-#app.add_url_rule('/shows/search',view_func=sc.search_shows,  methods=['POST'])
+app.add_url_rule('/shows/search',view_func=sc.search_shows,  methods=['POST'])
 #app.add_url_rule('/shows/create', view_func=sc.create_show_form, methods=['GET'])
 app.add_url_rule('/shows/create', view_func=sc.create_show_submission, methods=['POST'])
 app.add_url_rule('/shows/<show_id>', view_func=sc.delete_show, methods=['DELETE'])
@@ -118,7 +119,7 @@ seed()
 # Controllers.
 #----------------------------------------------------------------------------#
 
-@app.route('/')
+@app.route('/', methods=["POST", "GET", "DELETE"])
 def index():
   return render_template('pages/home.html')
 

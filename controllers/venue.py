@@ -1,10 +1,10 @@
 from models import db, Venue, Show
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request,jsonify, make_response, Response, flash, redirect, url_for
 from flask_wtf import Form
 from forms import VenueForm
 
 def venues():
-  # TODO: replace with real venues data.
+  # TODO [X]: replace with real venues data.
   # Aggregate by state and city
   # num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
   _data = []  
@@ -19,8 +19,8 @@ def venues():
               on v.id = s.venue_id
               group by v.city, v.state, v.name, v.id, s.upcoming
               order by v.state, v.city, v.name, v.id, s.upcoming'''
-  
   rows = db.session.execute(qryStr).all()
+  
   # find if state and city already there
   # if not adds an entry and inserts the first venue
   # if yes adds the venue
@@ -45,8 +45,9 @@ def venues():
   
   return render_template('pages/venues.html', areas=_data);
 
+
 def search_venues():
-  # TODO [X ]: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # TODO [X]: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   qry = request.form.get('search_term', '')
@@ -61,7 +62,7 @@ def search_venues():
 
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
-  # TODO[X] : replace with real venue data from the venues table, using venue_id #
+  # TODO [X] : replace with real venue data from the venues table, using venue_id #
   data = Venue.query.get(venue_id);
   return render_template('pages/show_venue.html', venue=data)
 
@@ -73,23 +74,47 @@ def create_venue_form():
 
 
 def create_venue_submission():
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
+  # TODO [ ]: insert form data as a new Venue record in the db, instead
+  # TODO [ ]: modify data to be the data object returned from db insertion
 
   # on successful db insert, flash success
   flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
+ 
+  # TODO [ ]: on unsuccessful db insert, flash an error instead.
   # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+ 
   # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
   return render_template('pages/home.html')
 
 def delete_venue(venue_id):
-  # TODO: Complete this endpoint for taking a venue_id, and using
+  # TODO [ ]: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
-
-  # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-  # clicking that button delete it from the db then redirect the user to the homepage
-  return None
+  db.session.begin()
+  response = make_response(
+    jsonify({"redirect": url_for('index') }),
+    200
+  )
+  try:
+    # TODO [ ] REMOVE ME
+    venue_id = 99
+    m2m = f'delete from public."Show" where venue_id = {venue_id}'
+    qry = f'delete from public."Venue" where id = {venue_id}'
+    db.session.execute(m2m)
+    db.session.execute(qry)
+    db.session.commit()
+    
+    flash(f'Venue {venue_id} deleted.')    
+  except Exception as err:
+    flash(f'An error occurred. Venue {venue_id} could not be deleted.')
+    response = make_response(
+      jsonify({"err": getattr(err, 'message', repr(err)) }),
+      500
+    )
+    db.session.rollback()
+  finally:
+    db.session.close()
+  response.headers["Content-Type"] = "application/json"  
+  return response
 
 
 #@app.route('/venues/<int:venue_id>/edit', methods=['GET'])
