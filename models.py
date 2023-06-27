@@ -1,46 +1,7 @@
-
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from sqlalchemy.ext.hybrid import hybrid_property
-
-from sqlalchemy.dialects.postgresql import (
-    ARRAY,
-    BIGINT,
-    BIT,
-    BOOLEAN,
-    BYTEA,
-    CHAR,
-    CIDR,
-    DATE,
-    DOUBLE_PRECISION,
-    ENUM,
-    FLOAT,
-    HSTORE,
-    INET,
-    INTEGER,
-    INTERVAL,
-    JSON,
-    JSONB,
-    MACADDR,
-    MONEY,
-    NUMERIC,
-    OID,
-    REAL,
-    SMALLINT,
-    TEXT,
-    TIME,
-    TIMESTAMP,
-    UUID,
-    VARCHAR,
-    INT4RANGE,
-    INT8RANGE,
-    NUMRANGE,
-    DATERANGE,
-    TSRANGE,
-    TSTZRANGE,
-    REGCLASS,
-    TSVECTOR,
-)
+from sqlalchemy.dialects.postgresql import (ARRAY)
 
 db = SQLAlchemy()
 #----------------------------------------------------------------------------#
@@ -53,17 +14,17 @@ class Venue(db.Model): # type: ignore
     name = db.Column(db.String, nullable=False, index=True)
     city = db.Column(db.String(120), nullable=False, index=True)
     state = db.Column(db.String(120),nullable=False, index=True)
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(36),nullable=False)
+    address = db.Column(db.String(120),nullable=False)
+    phone = db.Column(db.String(36), nullable=False)
     
-    image_link = db.Column(db.String(500))
+    image_link = db.Column(db.String(500),nullable=False, server_default='https://loremflickr.com/320/240/music,bar/all')
     facebook_link = db.Column(db.String(120))
-    genres = db.Column(ARRAY(db.String(24)))
-    website = db.Column(db.String(120),nullable=False)
+    genres = db.Column(ARRAY(db.String(24)),nullable=False)
+    website_link = db.Column(db.String(120),nullable=False)
     
-    seeking_talent = db.Column(db.Boolean, nullable=False, default=True)
+    seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String, nullable=True)
-    created_at = db.Column(db.DateTime, server_default=func.now())
+    created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False, index=True)
     
     #relationships
     past_shows = db.relationship('Show', 
@@ -99,14 +60,14 @@ class Artist(db.Model): # type: ignore
     state = db.Column(db.String(120),nullable=False, index=True)
     phone = db.Column(db.String(36), nullable=False)
     
-    image_link = db.Column(db.String(500))
+    image_link = db.Column(db.String(500),nullable=False, server_default='https://loremflickr.com/320/240/band/all')
     facebook_link = db.Column(db.String(120))
-    genres = db.Column(ARRAY(db.String(24)))
-    website = db.Column(db.String(120), nullable=False)
+    genres = db.Column(ARRAY(db.String(24)),nullable=False)
+    website_link = db.Column(db.String(120), nullable=False)
     
-    seeking_venue = db.Column(db.Boolean, nullable=False, default=True)
-    seeking_description = db.Column(db.String, nullable=False)
-    created_at = db.Column(db.DateTime, server_default=func.now())
+    seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
+    seeking_description = db.Column(db.String, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False, index=True)
     
     #relationships
     past_shows = db.relationship('Show', 

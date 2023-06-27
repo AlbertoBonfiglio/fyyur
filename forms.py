@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask_wtf import Form
+from flask_wtf import Form, FlaskForm
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
 from wtforms.validators import DataRequired, AnyOf, URL
 
@@ -16,7 +16,7 @@ class ShowForm(Form):
         default= datetime.today()
     )
 
-class VenueForm(Form):
+class VenueForm(FlaskForm):
     name = StringField(
         'name', validators=[DataRequired()]
     )
@@ -86,7 +86,8 @@ class VenueForm(Form):
         'phone'
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[DataRequired(), URL()],
+        default='https://loremflickr.com/320/240/music,bar/all'
     )
     genres = SelectMultipleField(
         # TODO [ ]  implement enum restriction
@@ -117,10 +118,15 @@ class VenueForm(Form):
         'facebook_link', validators=[URL()]
     )
     website_link = StringField(
-        'website_link'
+        'website_link',
+        validators=[URL()]
     )
 
-    seeking_talent = BooleanField( 'seeking_talent' )
+    seeking_talent = BooleanField(
+        'seeking_talent', 
+        default=False, 
+        false_values=('False', 'false', '')
+    )
 
     seeking_description = StringField(
         'seeking_description'
@@ -196,7 +202,9 @@ class ArtistForm(Form):
         'phone'
     )
     image_link = StringField(
-        'image_link'
+        'image_link', validators=[DataRequired(), URL()],
+        default='https://loremflickr.com/320/240/band/all'
+        
     )
     genres = SelectMultipleField(
         'genres', validators=[DataRequired()],
@@ -228,10 +236,15 @@ class ArtistForm(Form):
      )
 
     website_link = StringField(
-        'website_link'
+        'website_link',
+        validators=[URL()]
      )
 
-    seeking_venue = BooleanField( 'seeking_venue' )
+    seeking_venue = BooleanField(
+        'seeking_venue', 
+        default=False, 
+        false_values=('False', 'false', '')
+    )
 
     seeking_description = StringField(
             'seeking_description'
