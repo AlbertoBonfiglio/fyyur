@@ -1,88 +1,66 @@
-from models import db, Artist, Venue, Show
-from flask import Flask, render_template,make_response, jsonify, request, Response, flash, redirect, url_for
-from flask_wtf import Form
+from models import db, Artist,Show
+from flask import abort, render_template,make_response, jsonify, request, Response, flash, redirect, url_for
 from forms import ArtistForm
-from sqlalchemy.orm import load_only
 from sqlalchemy import delete
+import sys
+
 #  Artists
 #  ----------------------------------------------------------------
 def artists():
   # TODO [X] : replace with real data returned from querying the database
-
-  data = Artist.query.all();
+  try:
+    data = Artist.query.all();
+    return render_template('pages/artists.html', artists=data)
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
   
-  return render_template('pages/artists.html', artists=data)
 
 def search_artists():
   # TODO [X]: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  qry = request.form.get('search_term', '')
-  data = Artist.query.filter(Artist.name.ilike(f'%{qry}%')).all()
-  response={
-    "count": len(data),
-    "data": data
-  }
-  return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
-
+  try:
+    qry = request.form.get('search_term', '')
+    data = Artist.query.filter(Artist.name.ilike(f'%{qry}%')).all()
+    response={
+      "count": len(data),
+      "data": data
+    }
+    return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
+  
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO [X]: replace with real artist data from the artist table, using artist_id
-  data = Artist.query.get(artist_id)
-  return render_template('pages/show_artist.html', artist=data)
-
-#  Update
-#  ----------------------------------------------------------------
-def edit_artist(artist_id):
-  form = ArtistForm()
-  artist={
-    "id": 4,
-    "name": "Guns N Petals",
-    "genres": ["Rock n Roll"],
-    "city": "San Francisco",
-    "state": "CA",
-    "phone": "326-123-5000",
-    "website_link": "https://www.gunsnpetalsband.com",
-    "facebook_link": "https://www.facebook.com/GunsNPetals",
-    "seeking_venue": True,
-    "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
-    "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80"
-  }
-  # TODO: populate form with fields from artist with ID <artist_id>
-  return render_template('forms/edit_artist.html', form=form, artist=artist)
-
-def edit_artist_submission(artist_id):
-  # TODO: take values from the form submitted, and update existing
-  # artist record with ID <artist_id> using the new attributes
-
-  return redirect(url_for('show_artist', artist_id=artist_id))
-#  Create Artist
-#  ----------------------------------------------------------------
-
-def create_artist_form():
-  form = ArtistForm()
-  return render_template('forms/new_artist.html', form=form)
-
-def create_artist_submission():
-  # called upon submitting the new artist listing form
-  # TODO: insert form data as a new Venue record in the db, instead
-  # TODO: modify data to be the data object returned from db insertion
-
-  # on successful db insert, flash success
-  flash('Artist ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
-  return render_template('pages/home.html')
+  try:
+    artist = Artist.query.get(artist_id)
+    if (artist == None):
+      raise Exception('Artist not found')
+    return render_template('pages/show_artist.html', artist=artist)
+  
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred. Artist could not be found.')
+    abort(500)
+  
 
 def delete_artist(artist_id):
   # TODO [X]: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
-  db.session.begin()
   response = make_response(
     jsonify({"redirect": url_for('index') }),
     200
   )
   try:
+    db.session.begin()
     m2m = delete(Show).where(Show.artist_id == artist_id)
     qry = delete(Artist).where(Artist.id == artist_id)
 
@@ -100,5 +78,121 @@ def delete_artist(artist_id):
     db.session.rollback()
   finally:
     db.session.close()
+  
   response.headers["Content-Type"] = "application/json"  
   return response
+  
+
+#  Create Artist
+#  ----------------------------------------------------------------
+
+def create_artist_form():
+  form:ArtistForm = ArtistForm()
+  return render_template('forms/new_artist.html', form=form)
+
+def create_artist_submission():
+  # TODO [X]: insert form data as a new Venue record in the db, instead
+  error = False
+  data = request.form
+  try:
+    db.session.begin()
+    record: Artist = Artist(
+      name = data['name'],\
+      city = data['city'],\
+      state = data['state'],\
+      phone = data['phone'],\
+      image_link = data['image_link'],\
+      facebook_link = data['facebook_link'],\
+      genres = data.getlist('genres'),\
+      website_link = data['website_link'],\
+      seeking_venue = data.get("seeking_venue", default=False, type=bool),\
+      seeking_description = data['seeking_description']
+    )
+    db.session.add(record)
+    db.session.commit()
+    # on successful db insert, flash success
+    flash('Artist ' + request.form['name'] + ' was successfully listed!')
+    
+  except Exception as err:
+    db.session.rollback()
+    error = True
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred. Venue could not be listed.')
+  
+  finally:
+    db.session.close()
+    
+  if error:
+      abort(500)
+  else:
+    return render_template('pages/home.html') 
+
+  
+#  Update
+#  ----------------------------------------------------------------
+def edit_artist(artist_id):
+  form: ArtistForm = ArtistForm()
+  try:
+    artist: Artist =  Artist.query.get(artist_id);
+    if (artist == None):
+      raise Exception('Artist not found')
+    
+    # TODO [X] : populate form with values from venue with ID <venue_id>  
+    form.name.data = artist.name
+    form.city.data = artist.city
+    form.state.data =artist.state
+    form.phone.data = artist.phone
+    form.image_link.data = artist.image_link
+    form.facebook_link.data = artist.facebook_link
+    form.genres.data = artist.genres
+    form.website_link.data = artist.website_link
+    form.seeking_venue.data  = artist.seeking_venue
+    form.seeking_description.data = artist.seeking_description  
+    
+    # TODO: populate form with fields from artist with ID <artist_id>
+    return render_template('forms/edit_artist.html', form=form, artist=artist)
+  
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
+    
+def edit_artist_submission(artist_id):
+  # TODO [X]: take values from the form submitted, and update existing
+  # venue record with ID <venue_id> using the new attributes
+  data = request.form
+  try:
+    db.session.begin()
+    record: Artist = Artist()
+    if (record == None):
+      raise Exception('Artist not found')
+  
+    record: Artist = Artist.query.get(artist_id)
+    record.name = data['name']
+    record.city = data['city']
+    record.state = data['state']
+    record.phone = data['phone']
+    record.image_link = data['image_link']
+    record.facebook_link = data['facebook_link']
+    record.genres = data.getlist('genres')
+    record.website_link = data['website_link']
+    record.seeking_venue = data.get("seeking_venue", default=False, type=bool)
+    record.seeking_description = data['seeking_description']
+    db.session.commit()
+  
+    # on successful db insert, flash success
+    flash('Artist ' + request.form['name'] + ' was successfully update!')
+    
+  except Exception as err:
+    db.session.rollback()
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred. Artist could not be update.')
+  
+  finally:
+    db.session.close()
+    
+
+  return redirect(url_for('show_artist', artist_id=artist_id))

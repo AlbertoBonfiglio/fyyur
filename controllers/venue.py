@@ -8,65 +8,85 @@ def venues():
   # TODO [X]: replace with real venues data.
   # Aggregate by state and city
   # num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  _data = []  
-  qryStr = '''select v.city as city, v.state as state, v.id as venue_id, v.name, count(s.upcoming) as upcoming
-              from ( 
-                select ss.venue_id, (ss.start_time > now()) as upcoming
-                from public."Show" ss 
-                group by ss.venue_id, ss.start_time
-                having ss.start_time > now()
-              ) as s
-              right join public."Venue" v 
-              on v.id = s.venue_id
-              group by v.city, v.state, v.name, v.id, s.upcoming
-              order by v.state, v.city, v.name, v.id, s.upcoming'''
-  rows = db.session.execute(qryStr).all()
+  try:
+    _data = []  
+    qryStr = '''select v.city as city, v.state as state, v.id as venue_id, v.name, count(s.upcoming) as upcoming
+                from ( 
+                  select ss.venue_id, (ss.start_time > now()) as upcoming
+                  from public."Show" ss 
+                  group by ss.venue_id, ss.start_time
+                  having ss.start_time > now()
+                ) as s
+                right join public."Venue" v 
+                on v.id = s.venue_id
+                group by v.city, v.state, v.name, v.id, s.upcoming
+                order by v.state, v.city, v.name, v.id, s.upcoming'''
+    rows = db.session.execute(qryStr).all()
+    
+    # find if state and city already there
+    # if not adds an entry and inserts the first venue
+    # if yes adds the venue
+    for row in rows:
+      item = [item for item in _data if (item.get('city') == row.city and item.get('state') == row.state)]
+      if (len(item) == 0):
+        _data.append({
+          "city": row.city,
+          "state": row.state,
+          "venues": [{
+            "id": row.venue_id,
+            "name": row.name,
+            "num_upcoming_shows": row.upcoming,
+          }]
+        })
+      else :
+        item[0].get('venues').append({
+            "id": row.venue_id,
+            "name": row.name,
+            "num_upcoming_shows": row.upcoming,
+        })
+    
+    return render_template('pages/venues.html', areas=_data);
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
   
-  # find if state and city already there
-  # if not adds an entry and inserts the first venue
-  # if yes adds the venue
-  for row in rows:
-    item = [item for item in _data if (item.get('city') == row.city and item.get('state') == row.state)]
-    if (len(item) == 0):
-      _data.append({
-        "city": row.city,
-        "state": row.state,
-        "venues": [{
-          "id": row.venue_id,
-          "name": row.name,
-          "num_upcoming_shows": row.upcoming,
-        }]
-      })
-    else :
-      item[0].get('venues').append({
-          "id": row.venue_id,
-          "name": row.name,
-          "num_upcoming_shows": row.upcoming,
-      })
-  
-  return render_template('pages/venues.html', areas=_data);
-
-
 def search_venues():
   # TODO [X]: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  qry = request.form.get('search_term', '')
-  data = Venue.query.filter(Venue.name.ilike(f'%{qry}%')).all()
-  response={
-    "count": len(data),
-    "data": data
-  }
+  try:
+    qry = request.form.get('search_term', '')
+    data = Venue.query.filter(Venue.name.ilike(f'%{qry}%')).all()
+    response={
+      "count": len(data),
+      "data": data
+    }
 
-  return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
-
+    return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
+  
 
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO [X] : replace with real venue data from the venues table, using venue_id #
-  data: Venue = Venue.query.get(venue_id);
-  return render_template('pages/show_venue.html', venue=data)
-
+  try:
+    data: Venue = Venue.query.get(venue_id);
+    if (data == None):
+      raise Exception('Venue not found')
+    return render_template('pages/show_venue.html', venue=data)
+    
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
+  
 
 def delete_venue(venue_id):
   # TODO [X]: Complete this endpoint for taking a venue_id, and using
@@ -149,32 +169,43 @@ def create_venue_submission():
 def edit_venue(venue_id):
   # TODO [X]: modify data to be the data object returned from db insertion
   form: VenueForm = VenueForm()
-  venue: Venue =  Venue.query.get(venue_id);
+  try:
+    venue: Venue =  Venue.query.get(venue_id);
+    if (venue == None):
+      raise Exception('Venue not found')
+    
+    # TODO [X] : populate form with values from venue with ID <venue_id>  
+    form.name.data = venue.name
+    form.city.data = venue.city
+    form.state.data =venue.state
+    form.address.data = venue.address
+    form.phone.data = venue.phone
+    form.image_link.data = venue.image_link
+    form.facebook_link.data = venue.facebook_link
+    form.genres.data = venue.genres
+    form.website_link.data = venue.website_link
+    form.seeking_talent.data = venue.seeking_talent
+    form.seeking_description.data = venue.seeking_description
+    
+    return render_template('forms/edit_venue.html', form=form, venue=venue)
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
   
-  # TODO [X] : populate form with values from venue with ID <venue_id>  
-  form.name.data = venue.name
-  form.city.data = venue.city
-  form.state.data =venue.state
-  form.address.data = venue.address
-  form.phone.data = venue.phone
-  form.image_link.data = venue.image_link
-  form.facebook_link.data = venue.facebook_link
-  form.genres.data = venue.genres
-  form.website_link.data = venue.website_link
-  form.seeking_talent.data = venue.seeking_talent
-  form.seeking_description.data = venue.seeking_description
-  
-  return render_template('forms/edit_venue.html', form=form, venue=venue)
-
 
 def edit_venue_submission(venue_id):
   # TODO [X]: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
   data = request.form
-  record: Venue = Venue()
-  db.session.begin()
   try:
+    record: Venue = Venue()
+    db.session.begin()
     record: Venue = Venue.query.get(venue_id)
+    if (record == None):
+      raise Exception('Venue not found')
+  
     record.name = data['name']
     record.city = data['city']
     record.state = data['state']
@@ -189,13 +220,13 @@ def edit_venue_submission(venue_id):
     db.session.commit()
   
     # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
+    flash('Venue ' + request.form['name'] + ' was successfully updated!')
     
   except Exception as err:
     db.session.rollback()
     print(sys.exc_info(), err)
     # TODO [X]: on unsuccessful db insert, flash an error instead.
-    flash(f'An error occurred. Venue could not be listed.')
+    flash(f'An error occurred. Venue could not be updated.')
   
   finally:
     db.session.close()
