@@ -1,5 +1,6 @@
+import sys
 from models import db, Show, Venue, Artist
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, abort, render_template, request, Response, flash, redirect, url_for
 from flask_wtf import Form
 from forms import ShowForm
 
@@ -32,21 +33,48 @@ def search_shows():
 
   return render_template('pages/search_shows.html', results=response, search_term=request.form.get('search_term', ''))
 
-def create_shows():
-  # renders form. do not touch.
-  form = ShowForm()
-  return render_template('forms/new_show.html', form=form)
-
-def create_show_submission():
-  # called to create new shows in the db, upon submitting new show listing form
-  # TODO: insert form data as a new Show record in the db, instead
-
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
-
 def delete_show(show_id):
   raise Exception('Not implemented yet')
+
+
+def create_show_form():
+  # renders form. do not touch.
+  languages = ["C++", "Python", "PHP", "Java", "C", "Ruby",
+                     "R", "C#", "Dart", "Fortran", "Pascal", "Javascript"]
+          
+  
+  
+  form: ShowForm = ShowForm()
+  return render_template('forms/new_show.html', form=form, languages=languages)
+
+def create_show_submission():
+# TODO [X]: insert form data as a new Venue record in the db, instead
+  error = False
+  data = request.form
+
+  try:
+    db.session.begin()
+    record: Show = Show(
+      venue_id = data['venue_id'],\
+      artist_id = data['artist_id'],\
+      start_time = data['start_time']
+    )
+    db.session.add(record)
+    db.session.commit()
+    # on successful db insert, flash success
+    flash('Show on ' + request.form['start_time'] + ' was successfully listed!')
+    
+  except Exception as err:
+    db.session.rollback()
+    error = True
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred. Show could not be listed.')
+  
+  finally:
+    db.session.close()
+    
+  if error:
+      abort(500)
+  else:
+    return render_template('pages/home.html') 

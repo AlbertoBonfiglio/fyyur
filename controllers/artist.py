@@ -150,7 +150,7 @@ def edit_artist(artist_id):
     form.seeking_venue.data  = artist.seeking_venue
     form.seeking_description.data = artist.seeking_description  
     
-    # TODO: populate form with fields from artist with ID <artist_id>
+    # TODO [X]: populate form with fields from artist with ID <artist_id>
     return render_template('forms/edit_artist.html', form=form, artist=artist)
   
   except Exception as err:

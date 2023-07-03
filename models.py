@@ -96,9 +96,13 @@ class Artist(db.Model): # type: ignore
     
 class Show(db.Model): # type: ignore
     __tablename__ = 'Show'
-    #id = db.Column(db.Integer, primary_key=True)
-    venue_id= db.Column(db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
-    artist_id= db.Column(db.Integer,db.ForeignKey('Artist.id'), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    venue_id= db.Column(db.Integer, db.ForeignKey('Venue.id'), index=True)
+    artist_id= db.Column(db.Integer,db.ForeignKey('Artist.id'), index=True)
     venue = db.relationship('Venue')
     artist = db.relationship('Artist')
-    start_time = db.Column(db.DateTime, server_default=func.now(), primary_key=True)
+    start_time = db.Column(db.DateTime, server_default=func.now(), index=True)
+    
+    __table_args__ = (
+        db.UniqueConstraint('venue_id', 'artist_id', 'start_time', name='venue_artist_time_idx' ),
+    )

@@ -48,7 +48,7 @@ def config_routes(app) :
   app.add_url_rule('/shows', view_func=sc.shows)
   #app.add_url_rule('/shows/<int:show_id>', view_func=sc.show_show)
   app.add_url_rule('/shows/search',view_func=sc.search_shows,  methods=['POST'])
-  #app.add_url_rule('/shows/create', view_func=sc.create_show_form, methods=['GET'])
+  app.add_url_rule('/shows/create', view_func=sc.create_show_form, methods=['GET'])
   app.add_url_rule('/shows/create', view_func=sc.create_show_submission, methods=['POST'])
   #app.add_url_rule('/shows/<int:show_id>/edit', view_func=sc.show_show, methods=['GET'])
   #app.add_url_rule('/shows/<int:show_id>/edit', view_func=sc.show_show, methods=['POST'])
