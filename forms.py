@@ -1,6 +1,6 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
+from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField, HiddenField
 from wtforms.validators import DataRequired, AnyOf, URL
 from enums import GenreEnum, StateEnum
 
@@ -8,12 +8,20 @@ from enums import GenreEnum, StateEnum
 # TODO [X] implement enum restriction
         
 class ShowForm(FlaskForm):
-    artist_id = StringField(
+    artist_id = HiddenField(
         'artist_id',
         validators=[DataRequired()],
     )
-    venue_id = StringField(
+    artist_name = StringField(
+        'artist_name',
+        validators=[DataRequired()],
+    )
+    venue_id = HiddenField(
         'venue_id',
+        validators=[DataRequired()],
+    )
+    venue_name = StringField(
+        'venue_name',
         validators=[DataRequired()],
     )
     start_time = DateTimeField(

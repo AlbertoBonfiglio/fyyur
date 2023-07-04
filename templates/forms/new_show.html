@@ -4,17 +4,22 @@
   <div class="form-wrapper">
     <form method="post" class="form">
       <h3 class="form-heading">List a new show</h3>
-      <div class="form-group">
-        <label for="artist_id">Artist ID</label>
-        <small>ID can be found on the Artist's Page</small>
-        {{ form.artist_id(class_ = 'form-control', autofocus = true) }}
+      <div class="form-group artist-lookup" data-artists="{{languages}}">
+        <label for="artist_name">Artist Name</label>
+        <small>Start typing the artist name</small>
+        {{ form.artist_name(class_ = 'form-control', autofocus = true) }}
       </div>
       <div class="form-group">
-        <label for="venue_id">Venue ID</label>
-        <small>ID can be found on the Venue's Page</small>
-        {{ form.venue_id(class_ = 'form-control', autofocus = true) }}
+        {{ form.artist_id(class_ = 'form-control') }}
       </div>
       <div class="form-group">
+        <label for="venue_name">Venue Name</label>
+        <small>Start typing the venue name</small>
+        {{ form.venue_name(class_ = 'form-control', autofocus = true) }}
+      </div>
+      <div class="form-group">
+        {{ form.venue_id(class_ = 'form-control') }}
+      </div><div class="form-group">
           <label for="start_time">Start Time</label>
           {{ form.start_time(class_ = 'form-control', placeholder='YYYY-MM-DD HH:MM', autofocus = true) }}
         </div>
@@ -23,15 +28,56 @@
   </div>
 
   <script>
-    $(function () {
-        var availableTags = [
-          {% for language in languages %}
-                "{{language}}",
-          {% endfor %}
-        ];
+    $(async function () {
+      const route ="{{ url_for('autocomplete_artist')|safe }}";
+      var availableTags = [];
 
-      $("#artist_id").autocomplete({source: availableTags});
-    }
-    );
+      console.log(route);
+      let response = await fetch(route, {method: "GET",});
+      if (response.ok) {
+        availableTags =  await response.json();
+      } else {
+        alert('A server error occurred. Please retry.');
+        console.log(response);
+      }
+      
+      $("#artist_name").autocomplete({
+        source: availableTags,
+        select: function (event, ui) {
+          event.preventDefault();
+          $('#artist_name').val(ui.item.label);
+          $('#artist_id').val(ui.item.value);
+          console.log(ui.item.label);
+          console.log(ui.item.value);
+        }
+      });
+    });
+
+    $(async function () {
+        const route = "{{ url_for('autocomplete_venue')|safe }}";
+        var availableTags = [];
+
+        console.log(route);
+        let response = await fetch(route, { method: "GET", });
+        if (response.ok) {
+          availableTags = await response.json();
+        } else {
+          alert('A server error occurred. Please retry.');
+          console.log(response);
+        }
+
+        $("#venue_name").autocomplete({
+          source: availableTags,
+          select: function (event, ui) {
+            event.preventDefault();
+            $('#venue_name').val(ui.item.label);
+            $('#venue_id').val(ui.item.value);
+            console.log(ui.item.label);
+            console.log(ui.item.value);
+          }
+        });
+      });
+
+    $('#start_time').datetimepicker();  
   </script>
 {% endblock %}

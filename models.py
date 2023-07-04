@@ -50,6 +50,8 @@ class Venue(db.Model): # type: ignore
     def __repr__(self):
         return f'<Venue ID: {self.id}, name: {self.name}, shows: {self.upcoming_shows}, past_shows: {self.past_shows}>'
       
+    def as_autocomplete(self):
+      return {'value': self.id, 'label': self.name}
     
 
 class Artist(db.Model): # type: ignore
@@ -91,7 +93,16 @@ class Artist(db.Model): # type: ignore
         return len(self.upcoming_shows)
     
     def __repr__(self):
-      return f'<Artist ID: {self.id}, name: {self.name}, shows: {self.upcoming_shows}, past_shows: {self.past_shows}>'
+      return f'''< 
+        Artist ID: {self.id}, 
+        name: {self.name}, 
+        shows: {self.upcoming_shows}, 
+        past_shows: {self.past_shows},
+        created: {self.created_at} 
+      >'''
+    
+    def as_autocomplete(self):
+      return {'value': self.id, 'label': self.name}
     
     
 class Show(db.Model): # type: ignore

@@ -20,3 +20,4 @@ for (let i = 0; i < deleteBtns.length; i++) {
     }
   };
 }
+

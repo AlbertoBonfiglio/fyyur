@@ -1,13 +1,12 @@
 from flask import Flask, render_template
+import controllers.main as mc
 import controllers.venue as vc
 import controllers.artist as ac
 import controllers.show as sc
 
 def config_routes(app) :
-  @app.route('/', methods=["POST", "GET", "DELETE"])
-  def index():
-    return render_template('pages/home.html')
-
+  # @app.route('/', methods=["POST", "GET", "DELETE"])
+  
   @app.errorhandler(404)
   def not_found_error(error):
     return render_template('errors/404.html'), 404
@@ -16,6 +15,10 @@ def config_routes(app) :
   def server_error(error):
     return render_template('errors/500.html'), 500
 
+  #----------------------------------------------------------------------------#
+  # Index Routes.
+  #----------------------------------------------------------------------------#
+  app.add_url_rule('/', view_func=mc.index)
   
   #----------------------------------------------------------------------------#
   # Venue Routes.
@@ -46,10 +49,12 @@ def config_routes(app) :
   # Show Routes
   #----------------------------------------------------------------------------#
   app.add_url_rule('/shows', view_func=sc.shows)
-  #app.add_url_rule('/shows/<int:show_id>', view_func=sc.show_show)
+  app.add_url_rule('/shows/<int:show_id>', view_func=sc.show_show)
   app.add_url_rule('/shows/search',view_func=sc.search_shows,  methods=['POST'])
   app.add_url_rule('/shows/create', view_func=sc.create_show_form, methods=['GET'])
   app.add_url_rule('/shows/create', view_func=sc.create_show_submission, methods=['POST'])
   #app.add_url_rule('/shows/<int:show_id>/edit', view_func=sc.show_show, methods=['GET'])
   #app.add_url_rule('/shows/<int:show_id>/edit', view_func=sc.show_show, methods=['POST'])
   app.add_url_rule('/shows/<show_id>', view_func=sc.delete_show, methods=['DELETE'])
+  app.add_url_rule('/shows/create/autocomplete_artist', view_func=sc.autocomplete_artist, methods=['GET'])
+  app.add_url_rule('/shows/create/autocomplete_venue', view_func=sc.autocomplete_venue, methods=['GET'])

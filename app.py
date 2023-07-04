@@ -66,6 +66,10 @@ if not app.debug:
 # Launch.
 #----------------------------------------------------------------------------#
 
+# TODO [ ]  Implement artist availability. An artist can list available times that they can be booked. Restrict venues from being able to create shows with artists during a show time that is outside of their availability.
+# TODO [ ]  Implement Search Artists by City and State, and Search Venues by City and State. Searching by "San Francisco, CA" should return all artists or venues in San Francisco, CA.
+
+
 # Default port:
 if __name__ == '__main__':
     app.run()

@@ -1,7 +1,7 @@
+import json
 import sys
 from models import db, Show, Venue, Artist
-from flask import Flask, abort, render_template, request, Response, flash, redirect, url_for
-from flask_wtf import Form
+from flask import abort, jsonify, make_response, render_template, request, Response, flash, redirect, url_for
 from forms import ShowForm
 
 #  Shows
@@ -12,6 +12,21 @@ def shows():
   # TODO [X] : replace with real venues data.
   data = Show.query.all()
   return render_template('pages/shows.html', shows=data)
+
+
+def show_show(show_id):
+   # TODO [X] : implemented show a show#
+  try:
+    data: Show = Show.query.get(show_id);
+    if (data == None):
+      raise Exception('Venue not found')
+    return render_template('pages/show.html', show=data)
+    
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    abort(500)
 
 
 def search_shows():
@@ -36,16 +51,49 @@ def search_shows():
 def delete_show(show_id):
   raise Exception('Not implemented yet')
 
+def autocomplete_artist():
+  # .filter(Artist.name.ilike(f'{artist}%')) \
+  #TODO [ ] eventually implement returning only the rows starting with the typed data
+  rows = db.session.query(Artist) \
+    .order_by(Artist.name) \
+    .all()
+  data = [row.as_autocomplete() for row in rows]
+  
+  response = make_response('response')
+  response.headers.add('Access-Control-Allow-Origin', '*')
+  response.content_type='application/json'
+  response.mimetype='application/json'
+  response.data = json.dumps(data)
+  response.status_code = 200
+  
+  return response
+  #return 
+
+def autocomplete_venue():
+  # .filter(Artist.name.ilike(f'{artist}%')) \
+  #TODO [ ] eventually implement returning only the rows starting with the typed data
+  rows = db.session.query(Venue) \
+    .order_by(Venue.name) \
+    .all()
+  data = [row.as_autocomplete() for row in rows]
+  
+  response = make_response('response')
+  response.headers.add('Access-Control-Allow-Origin', '*')
+  response.content_type='application/json'
+  response.mimetype='application/json'
+  response.data = json.dumps(data)
+  response.status_code = 200
+  
+  return response
+  #return 
+
+
 
 def create_show_form():
   # renders form. do not touch.
-  languages = ["C++", "Python", "PHP", "Java", "C", "Ruby",
-                     "R", "C#", "Dart", "Fortran", "Pascal", "Javascript"]
-          
-  
-  
   form: ShowForm = ShowForm()
-  return render_template('forms/new_show.html', form=form, languages=languages)
+  return render_template('forms/new_show.html', form=form)
+
 
 def create_show_submission():
 # TODO [X]: insert form data as a new Venue record in the db, instead
@@ -77,4 +125,4 @@ def create_show_submission():
   if error:
       abort(500)
   else:
-    return render_template('pages/home.html') 
+    return redirect(url_for('index'))
