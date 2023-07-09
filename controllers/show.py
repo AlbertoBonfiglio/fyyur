@@ -1,6 +1,6 @@
 import json
 import sys
-from models import db, Show, Venue, Artist
+from models import Availability, db, Show, Venue, Artist
 from flask import abort, jsonify, make_response, render_template, request, Response, flash, redirect, url_for
 from forms import ShowForm
 
@@ -34,7 +34,6 @@ def search_shows():
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   qry = request.form.get('search_term', '')
- 
   data = Show.query \
     .filter(
       Show.venue.has(Venue.name.ilike(f'%{qry}%')) |
@@ -45,7 +44,6 @@ def search_shows():
     "count": len(data),
     "data": data
   }
-
   return render_template('pages/search_shows.html', results=response, search_term=request.form.get('search_term', ''))
 
 def delete_show(show_id):
@@ -70,7 +68,6 @@ def autocomplete_artist():
   #return 
 
 def autocomplete_venue():
-  # .filter(Artist.name.ilike(f'{artist}%')) \
   #TODO [ ] eventually implement returning only the rows starting with the typed data
   rows = db.session.query(Venue) \
     .order_by(Venue.name) \
@@ -85,10 +82,25 @@ def autocomplete_venue():
   response.status_code = 200
   
   return response
-  #return 
 
-
-
+def get_availability(artist_id):
+  try:
+    data = Availability.query \
+      .filter(Availability.artist_id == artist_id) \
+      .order_by(Availability.created_at.desc()) \
+      .limit(1) \
+      .all()
+    if len(data) == 0:
+      return jsonify([])
+    else:
+      return jsonify([data[0].serialize()])
+    
+  except Exception as err:
+    print(sys.exc_info(), err)
+    # TODO [X]: on unsuccessful db insert, flash an error instead.
+    flash(f'An error occurred.')
+    return jsonify([])
+  
 def create_show_form():
   # renders form. do not touch.
   form: ShowForm = ShowForm()
@@ -99,9 +111,12 @@ def create_show_submission():
 # TODO [X]: insert form data as a new Venue record in the db, instead
   error = False
   data = request.form
-
   try:
     db.session.begin()
+    artist: Artist =  Artist.query.get(data['artist_id']);
+    if (artist == None):
+      raise Exception('Artist not found')
+    
     record: Show = Show(
       venue_id = data['venue_id'],\
       artist_id = data['artist_id'],\

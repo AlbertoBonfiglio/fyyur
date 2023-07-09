@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.dialects.postgresql import (ARRAY)
+from sqlalchemy.dialects.postgresql import (ARRAY, TIME)
 
 db = SQLAlchemy()
 #----------------------------------------------------------------------------#
@@ -69,9 +70,14 @@ class Artist(db.Model): # type: ignore
     
     seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String, nullable=True)
+
     created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False, index=True)
     
     #relationships
+    availability = db.relationship('Availability', 
+        order_by="desc(Availability.created_at)",  
+        viewonly=True)
+
     past_shows = db.relationship('Show', 
         order_by="Show.start_time",  
         primaryjoin="and_(Show.artist_id==Artist.id, Show.start_time <= func.now()) ",
@@ -92,6 +98,14 @@ class Artist(db.Model): # type: ignore
     def upcoming_shows_count(self):
         return len(self.upcoming_shows)
     
+    @property
+    def current_availability(self):
+        if len(self.availability) > 0:
+            return [self.availability[0]]
+        else: 
+            return self.availability
+        
+    
     def __repr__(self):
       return f'''< 
         Artist ID: {self.id}, 
@@ -103,6 +117,30 @@ class Artist(db.Model): # type: ignore
     
     def as_autocomplete(self):
       return {'value': self.id, 'label': self.name}
+    
+    def is_available(self, show_time):
+      # Implement this if we want to validate show availability server-side
+      # otherwise it's implemented in the UI
+      raise Exception('Not implemented yet')
+      return True
+
+@dataclass
+class Availability(db.Model): # type: ignore
+    __tablename__ = 'Availability'
+    id = db.Column(db.Integer, primary_key=True)
+    artist_id= db.Column(db.Integer,db.ForeignKey('Artist.id'), index=True)
+    start_time = db.Column(TIME, server_default=func.now(), nullable=False, index=True)
+    end_time = db.Column(TIME, server_default=func.now(), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False, index=True)
+    
+    def serialize(self):
+        return {
+            'ID': self.id, 
+            'artist_id': self.artist_id, 
+            'start_time': self.start_time.isoformat(), 
+            'end_time': self.end_time.isoformat(),
+            'created_at': self.created_at.isoformat()
+        }
     
     
 class Show(db.Model): # type: ignore

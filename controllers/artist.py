@@ -1,4 +1,4 @@
-from models import db, Artist,Show
+from models import Availability, db, Artist,Show
 from flask import abort, render_template,make_response, jsonify, request, Response, flash, redirect, url_for
 from forms import ArtistForm
 from sqlalchemy import delete
@@ -40,7 +40,9 @@ def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO [X]: replace with real artist data from the artist table, using artist_id
   try:
-    artist = Artist.query.get(artist_id)
+    artist: Artist = Artist.query.get(artist_id)
+    print('Availability: ', artist.availability)
+    
     if (artist == None):
       raise Exception('Artist not found')
     return render_template('pages/show_artist.html', artist=artist)
@@ -196,3 +198,5 @@ def edit_artist_submission(artist_id):
     
 
   return redirect(url_for('show_artist', artist_id=artist_id))
+
+

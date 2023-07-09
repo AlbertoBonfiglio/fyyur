@@ -25,7 +25,25 @@
 		</p>
 		<p>
 			<i class="fab fa-facebook-f"></i> {% if artist.facebook_link %}<a href="{{ artist.facebook_link }}" target="_blank">{{ artist.facebook_link }}</a>{% else %}No Facebook Link{% endif %}
-        </p>
+		</p>
+		{% if artist.availability %}
+			<p class="not-seeking2">
+				Availability:
+				<ul style="padding-left: 1em;">
+				{% for available in artist.current_availability %}
+					<li style="list-style: none;"><i class="fas fa-clock"></i> 
+						From: {{ available.start_time.strftime('%H:%M') }} 
+						to: {{ available.end_time.strftime('%H:%M') }} 
+					</li>
+				{% endfor %}	
+				</ul>
+			</p>
+			{% else %}
+			<p class="not-seeking">
+				<i class="fas fa-clock"></i> No availability restriction 
+			</p>
+		{% endif %}
+
 		{% if artist.seeking_venue %}
 		<div class="seeking">
 			<p class="lead">Currently seeking performance venues</p>
@@ -39,6 +57,7 @@
 		</p>
 		{% endif %}
 	</div>
+
 	<div class="col-sm-6">
 		<img src="{{ artist.image_link }}" alt="Venue Image" />
 	</div>
@@ -77,4 +96,5 @@
 	data-id="{{ artist.id }}" data-url="artists">
 	Delete
 </button>
+<a href="/artists/{{ artist.id }}/availability"><button class="btn btn-primary btn-lg">Edit Availability</button></a>
 {% endblock %}

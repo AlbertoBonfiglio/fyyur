@@ -20,64 +20,156 @@
       <div class="form-group">
         {{ form.venue_id(class_ = 'form-control') }}
       </div><div class="form-group">
-          <label for="start_time">Start Time</label>
+          <label for="start_time">Start Time <span id="availability">(No availability constraints)</span></label>
           {{ form.start_time(class_ = 'form-control', placeholder='YYYY-MM-DD HH:MM', autofocus = true) }}
         </div>
-      <input type="submit" value="Create Venue" class="btn btn-primary btn-lg btn-block">
+      <input type="submit" id="submit" value="Create Venue" disabled class="btn btn-primary btn-lg btn-block">
     </form>
   </div>
 
   <script>
-    $(async function () {
-      const route ="{{ url_for('autocomplete_artist')|safe }}";
-      var availableTags = [];
-
-      console.log(route);
-      let response = await fetch(route, {method: "GET",});
+    const get_availability = async function (artist_id) {
+      let el = $('#availability');
+      el.text('...');
+      // hack to add the parameter to the route
+      const route = "{{ url_for('get_availability', artist_id=artist_id)  }}" + artist_id;
+      let response = await fetch(route, { method: "GET", });
       if (response.ok) {
-        availableTags =  await response.json();
+        const avail = await response.json();
+        if (avail && avail.length > 0) {
+          el.text(`(Availability from: ${avail[0].start_time} to: ${avail[0].end_time} )`);
+          el.data('start', avail[0].start_time);
+          el.data('end', avail[0].end_time);
+        } else {
+          el.text('(No availability constraints)');
+          el.data('start', -1);
+          el.data('end', -1);
+        }
+      } else {
+        alert('A server error occurred. Please retry.');
+        return ''
+      }
+    }
+    
+    const getTags = async (route) => {
+      var availableTags = [];
+      let response = await fetch(route, { method: "GET", });
+      if (response.ok) {
+        availableTags = await response.json();
       } else {
         alert('A server error occurred. Please retry.');
         console.log(response);
+      }  
+      return availableTags
+    }
+
+    const evalTime = (date, start, end) => {
+      if (!start || !end ) { // restrictions not retrieved from db. return false
+        $('#availability').text('Please select an artist first');
+        return false
       }
-      
+      if (start === -1 || end === -1)  { // no restrictions. any time is good
+        return true
+      }
+      const startMinutes = parseInt((start.split(":")[0] * 60)) + parseInt(start.split(":")[1]);
+      const endMinutes = parseInt((end.split(":")[0] * 60)) + parseInt(end.split(":")[1]);
+      const minutesFromMidnight = new Date(date).setHours(0, 0, 0, 0);
+      const selectedTimeInMinutes = (new Date(date) - minutesFromMidnight) / 60000;
+      retVal = ((selectedTimeInMinutes >= startMinutes) && (selectedTimeInMinutes <= endMinutes));
+      return retVal
+    }
+
+    const isFormValid = () => {
+      const venue_dirty = $('#venue_name').data('isDirty'); 
+      const artist_dirty = $('#artist_name').data('isDirty');     
+      const time_dirty = $('#start_time').data('isDirty');     
+      console.log(`isFormInvalid: ${(!artist_dirty && !venue_dirty && !time_dirty)} `, artist_dirty,venue_dirty,time_dirty) 
+      return (!artist_dirty && !venue_dirty && !time_dirty);
+    }
+
+    const setSubmissionButton = () => {
+      $('#submit').prop('disabled', !isFormValid());
+    }
+
+    $("#artist_name").on('keyup paste', (event) => {
+      // if user types or pastes a value marks the field as dirty 
+      $('#artist_name').data('isDirty', true);
+      setSubmissionButton();
+    });
+
+    $("#venue_name").on('keyup paste', (event) => {
+        // if user types or pastes a value marks the field as dirty 
+        $('#venue_name').data('isDirty', true);
+        setSubmissionButton();
+    });
+
+    $("#start_time").on('keyup paste', (event) => {
+        // if user types or pastes a value marks the field as dirty 
+        $('#start_time').data('isDirty', true);
+        setSubmissionButton();
+      });
+
+    $('#artist_name').data('isDirty', true);
+    $('#venue_name').data('isDirty', true);
+    $('#start_time').data('isDirty', true);
+    setSubmissionButton()
+  
+
+      // Artist autocomplete  
+    $(async function () {
+      const route = "{{ url_for('autocomplete_artist')|safe }}";
+      var availableTags = await getTags(route);
+
       $("#artist_name").autocomplete({
         source: availableTags,
-        select: function (event, ui) {
+        select: async function (event, ui) {
           event.preventDefault();
           $('#artist_name').val(ui.item.label);
+          $('#artist_name').data('isDirty', false); // flag to check changes in name after autocomplete
           $('#artist_id').val(ui.item.value);
-          console.log(ui.item.label);
-          console.log(ui.item.value);
+          await get_availability(ui.item.value)
+          setSubmissionButton()
         }
       });
     });
 
+    // venue autocomplete
     $(async function () {
-        const route = "{{ url_for('autocomplete_venue')|safe }}";
-        var availableTags = [];
+      const route = "{{ url_for('autocomplete_venue')|safe }}";
+      var availableTags = await getTags(route);
 
-        console.log(route);
-        let response = await fetch(route, { method: "GET", });
-        if (response.ok) {
-          availableTags = await response.json();
-        } else {
-          alert('A server error occurred. Please retry.');
-          console.log(response);
+      $("#venue_name").autocomplete({
+        source: availableTags,
+        select: function (event, ui) {
+          event.preventDefault();
+          $('#venue_name').val(ui.item.label);
+          $('#venue_name').data('isDirty', false); // flag to check changes in name after autocomplete
+          $('#venue_id').val(ui.item.value);
+          setSubmissionButton()
         }
-
-        $("#venue_name").autocomplete({
-          source: availableTags,
-          select: function (event, ui) {
-            event.preventDefault();
-            $('#venue_name').val(ui.item.label);
-            $('#venue_id').val(ui.item.value);
-            console.log(ui.item.label);
-            console.log(ui.item.value);
-          }
-        });
       });
+    });
+    
+    // Datetime  
+    $(async function () {
+      $('#start_time').datetimepicker({
+        timeFormat: "HH:mm",
+        dateFormat: "yy-mm-dd",
+        minDate: new Date(),
+        onSelect: function (date, datepicker) {
+        },
+        onClose: function (date, datepicker) {
+          event.preventDefault();
+        
+          let el = $('#availability');
+          const isTimeValid = evalTime(date, el.data('start'), el.data('end'));
+          isTimeValid ? el.animate({ color: 'green' }, 1000) : el.animate({ color: 'red' }, 1000);
+          $('#start_time').data('isDirty', !isTimeValid); // flag to check changes in name after autocomplete. reversed when time is valid
+          
+          setSubmissionButton();
+        }
+      });  
+    });
 
-    $('#start_time').datetimepicker();  
   </script>
 {% endblock %}

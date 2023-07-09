@@ -3,6 +3,7 @@ import controllers.main as mc
 import controllers.venue as vc
 import controllers.artist as ac
 import controllers.show as sc
+import controllers.availability as avc
 
 def config_routes(app) :
   # @app.route('/', methods=["POST", "GET", "DELETE"])
@@ -43,7 +44,8 @@ def config_routes(app) :
   app.add_url_rule('/artists/<int:artist_id>/edit', view_func=ac.edit_artist, methods=['GET'])
   app.add_url_rule('/artists/<int:artist_id>/edit', view_func=ac.edit_artist_submission, methods=['POST'])
   app.add_url_rule('/artists/<artist_id>', view_func=ac.delete_artist, methods=['DELETE'])
-
+  app.add_url_rule('/artists/<artist_id>/availability', view_func=avc.create_availability_form, methods=['GET'])
+  app.add_url_rule('/artists/<artist_id>/availability', view_func=avc.create_availability_submission, methods=['POST'])
 
   #----------------------------------------------------------------------------#
   # Show Routes
@@ -58,3 +60,4 @@ def config_routes(app) :
   app.add_url_rule('/shows/<show_id>', view_func=sc.delete_show, methods=['DELETE'])
   app.add_url_rule('/shows/create/autocomplete_artist', view_func=sc.autocomplete_artist, methods=['GET'])
   app.add_url_rule('/shows/create/autocomplete_venue', view_func=sc.autocomplete_venue, methods=['GET'])
+  app.add_url_rule('/shows/create/get_availability/<artist_id>', view_func=sc.get_availability, methods=['GET'])
