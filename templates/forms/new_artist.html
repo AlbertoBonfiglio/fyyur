@@ -3,7 +3,13 @@
 {% block content %}
   <div class="form-wrapper">
     <form method="post" class="form">
+      {{form.hidden_tag()}}
       <h3 class="form-heading">List a new artist</h3>
+      {% for field, errors in form.errors.items() %}
+      <div class="alert alert-danger" role="alert">
+        {{ form[field].label }}: {{ ', '.join(errors) }}
+      </div>
+      {% endfor %}
       <div class="form-group">
         <label for="name">Name</label>
         {{ form.name(class_ = 'form-control', autofocus = true) }}
@@ -30,17 +36,17 @@
       </div>
       <div class="form-group">
           <label for="facebook_link">Facebook Link</label>
-          {{ form.facebook_link(class_ = 'form-control', placeholder='http://', autofocus = true) }}
+          {{ form.facebook_link(class_ = 'form-control', placeholder='https://', autofocus = true) }}
         </div>
       
         <div class="form-group">
           <label for="image_link">Image Link</label>
-          {{ form.image_link(class_ = 'form-control', placeholder='http://', autofocus = true) }}
+          {{ form.image_link(class_ = 'form-control', placeholder='https://', autofocus = true) }}
         </div>
 
         <div class="form-group">
             <label for="website_link">Website Link</label>
-            {{ form.website_link(class_ = 'form-control', placeholder='http://', autofocus = true) }}
+            {{ form.website_link(class_ = 'form-control', placeholder='https://', autofocus = true) }}
           </div>
 
           <div class="form-group">

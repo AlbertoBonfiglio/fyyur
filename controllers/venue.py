@@ -1,3 +1,4 @@
+from datetime import datetime
 from models import db, Venue, Show
 from flask import render_template, request,jsonify, make_response, flash, redirect, url_for, abort
 from forms import VenueForm
@@ -53,7 +54,7 @@ def venues():
     abort(500)
   
 def search_venues():
-  # TODO [X]: implement search on artists with partial string search. Ensure it is case-insensitive.
+  # TODO [X]: implement search on venues with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   try:
@@ -79,7 +80,18 @@ def show_venue(venue_id):
     data: Venue = Venue.query.get(venue_id);
     if (data == None):
       raise Exception('Venue not found')
-    return render_template('pages/show_venue.html', venue=data)
+
+    past_shows_query = Show.query.join(Venue) \
+      .filter(Show.venue_id==venue_id) \
+      .filter(Show.start_time<datetime.now()) \
+      .all()   
+      
+    future_shows_query = Show.query.join(Venue) \
+      .filter(Show.venue_id==venue_id) \
+      .filter(Show.start_time>=datetime.now()) \
+      .all()   
+    
+    return render_template('pages/show_venue.html', venue=data, future_shows= future_shows_query, past_shows=past_shows_query)
     
   except Exception as err:
     print(sys.exc_info(), err)
@@ -119,34 +131,36 @@ def delete_venue(venue_id):
 
 #  Create Venue
 #  ----------------------------------------------------------------
-def create_venue_form():
-  form: VenueForm = VenueForm()
-  return render_template('forms/new_venue.html', form=form)
-
-
 def create_venue_submission():
   # TODO [X]: insert form data as a new Venue record in the db, instead
   error = False
-  data = request.form
-  db.session.begin()
+  form: VenueForm = VenueForm(request.form)
   try:
-    record: Venue = Venue(
-      name = data['name'],\
-      city = data['city'],\
-      state = data['state'],\
-      address = data['address'],\
-      phone = data['phone'],\
-      image_link = data['image_link'],\
-      facebook_link = data['facebook_link'],\
-      genres = data.getlist('genres'),\
-      website_link = data['website_link'],\
-      seeking_talent = data.get("seeking_talent", default=False, type=bool),\
-      seeking_description = data['seeking_description']
-    )
-    db.session.add(record)
-    db.session.commit()
-    # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
+    db.session.begin()
+    if (request.method == 'POST'):
+      if (form.validate_on_submit() == False):
+        return render_template('forms/new_venue.html', form=form)
+    
+      record: Venue = Venue(
+        name = form.name.data,
+        city = form.city.data,
+        state = form.state.data,
+        address = form.address.data,
+        phone = form.phone.data,
+        image_link = form.image_link.data,
+        facebook_link = form.facebook_link.data,
+        genres = form.genres.data ,
+        website_link = form.website_link.data,
+        seeking_talent = form.seeking_talent.data,
+        seeking_description = form.seeking_description.data ,
+      )
+      db.session.add(record)
+      db.session.commit()
+      # on successful db insert, flash success
+      flash('Venue ' + record.name + ' was successfully listed!')
+      
+    else: # method=GET
+      return render_template('forms/new_venue.html', form=form)
     
   except Exception as err:
     db.session.rollback()
@@ -161,66 +175,55 @@ def create_venue_submission():
   if error:
       abort(500)
   else:
-    return render_template('pages/home.html') 
+    return redirect(url_for('index')) 
  
 
 #  Edit Venue
 #  ----------------------------------------------------------------
-def edit_venue(venue_id):
-  # TODO [X]: modify data to be the data object returned from db insertion
-  form: VenueForm = VenueForm()
-  try:
-    venue: Venue =  Venue.query.get(venue_id);
-    if (venue == None):
-      raise Exception('Venue not found')
-    
-    # TODO [X] : populate form with values from venue with ID <venue_id>  
-    form.name.data = venue.name
-    form.city.data = venue.city
-    form.state.data =venue.state
-    form.address.data = venue.address
-    form.phone.data = venue.phone
-    form.image_link.data = venue.image_link
-    form.facebook_link.data = venue.facebook_link
-    form.genres.data = venue.genres
-    form.website_link.data = venue.website_link
-    form.seeking_talent.data = venue.seeking_talent
-    form.seeking_description.data = venue.seeking_description
-    
-    return render_template('forms/edit_venue.html', form=form, venue=venue)
-  except Exception as err:
-    print(sys.exc_info(), err)
-    # TODO [X]: on unsuccessful db insert, flash an error instead.
-    flash(f'An error occurred.')
-    abort(500)
-  
-
 def edit_venue_submission(venue_id):
   # TODO [X]: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
-  data = request.form
   try:
-    record: Venue = Venue()
+    form: VenueForm = VenueForm(request.form)
     db.session.begin()
-    record: Venue = Venue.query.get(venue_id)
-    if (record == None):
+    venue: Venue = Venue.query.get(venue_id)
+    if (venue == None):
       raise Exception('Venue not found')
+    
+    if (request.method == 'POST'):
+      if (form.validate_on_submit() == False):
+        return render_template('forms/edit_venue.html', form=form, venue_id=venue_id)
   
-    record.name = data['name']
-    record.city = data['city']
-    record.state = data['state']
-    record.address = data['address']
-    record.phone = data['phone']
-    record.image_link = data['image_link']
-    record.facebook_link = data['facebook_link']
-    record.genres = data.getlist('genres')
-    record.website_link = data['website_link']
-    record.seeking_talent = data.get("seeking_talent", default=False, type=bool)
-    record.seeking_description = data['seeking_description']
-    db.session.commit()
+      venue.name = form.name.data
+      venue.city = form.city.data
+      venue.state = form.state.data
+      venue.address = form.address.data
+      venue.phone = form.phone.data
+      venue.image_link = form.image_link.data
+      venue.facebook_link = form.facebook_link.data
+      venue.genres = form.genres.data
+      venue.website_link = form.website_link.data
+      venue.seeking_talent = request.form.get("seeking_talent", default=False, type=bool) # form.seeking_talent.data,
+      venue.seeking_description = form.seeking_description.data
+      db.session.commit()
   
-    # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully updated!')
+      # on successful db insert, flash success
+      flash('Venue ' + request.form['name'] + ' was successfully updated!')
+    
+    else:
+      # TODO [X] : populate form with values from venue with ID 
+      form.name.data = venue.name
+      form.city.data = venue.city
+      form.state.data =venue.state
+      form.address.data = venue.address
+      form.phone.data = venue.phone
+      form.image_link.data = venue.image_link
+      form.facebook_link.data = venue.facebook_link
+      form.genres.data = venue.genres
+      form.website_link.data = venue.website_link
+      form.seeking_talent.data  = venue.seeking_talent
+      form.seeking_description.data = venue.seeking_description 
+      return render_template('forms/edit_venue.html', form=form, venue_id=venue_id)
     
   except Exception as err:
     db.session.rollback()

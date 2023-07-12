@@ -19,13 +19,18 @@ class Venue(db.Model): # type: ignore
     phone = db.Column(db.String(36), nullable=False)
     
     image_link = db.Column(db.String(500),nullable=False, server_default='https://loremflickr.com/320/240/music,bar/all')
-    facebook_link = db.Column(db.String(120))
+    facebook_link = db.Column(db.String(120),nullable=False)
     genres = db.Column(ARRAY(db.String(24)),nullable=False)
     website_link = db.Column(db.String(120),nullable=False)
     
     seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String, nullable=True)
+    
     created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False, index=True)
+    
+    __table_args__ = (
+        db.UniqueConstraint('name', name='venue_name_idx' ),
+    )
     
     #relationships
     past_shows = db.relationship('Show', 
@@ -49,7 +54,20 @@ class Venue(db.Model): # type: ignore
         return len(self.upcoming_shows)
 
     def __repr__(self):
-        return f'<Venue ID: {self.id}, name: {self.name}, shows: {self.upcoming_shows}, past_shows: {self.past_shows}>'
+        return f'''
+            <ID: {self.id}, 
+             name: {self.name}, 
+             city: {self.city},
+             state: {self.state},
+             address: {self.address},
+             phone: {self.phone},
+             image_link: {self.image_link},
+             facebook_link: {self.facebook_link},
+             genres: {self.genres},
+             website_link: {self.website_link},
+             seeking_talent: {self.seeking_talent},,
+             seeking_description: {self.seeking_description}
+            >'''
       
     def as_autocomplete(self):
       return {'value': self.id, 'label': self.name}
@@ -64,7 +82,7 @@ class Artist(db.Model): # type: ignore
     phone = db.Column(db.String(36), nullable=False)
     
     image_link = db.Column(db.String(500),nullable=False, server_default='https://loremflickr.com/320/240/band/all')
-    facebook_link = db.Column(db.String(120))
+    facebook_link = db.Column(db.String(120), nullable=False)
     genres = db.Column(ARRAY(db.String(24)),nullable=False)
     website_link = db.Column(db.String(120), nullable=False)
     
@@ -72,6 +90,10 @@ class Artist(db.Model): # type: ignore
     seeking_description = db.Column(db.String, nullable=True)
 
     created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False, index=True)
+    
+    __table_args__ = (
+        db.UniqueConstraint('name', name='artist_name_idx' ),
+    )
     
     #relationships
     availability = db.relationship('Availability', 
@@ -88,6 +110,7 @@ class Artist(db.Model): # type: ignore
         primaryjoin ="and_(Show.artist_id==Artist.id, Show.start_time > func.now()) ",
         viewonly=True
         ) 
+    
     
     # Calculated
     @hybrid_property
@@ -108,10 +131,16 @@ class Artist(db.Model): # type: ignore
     
     def __repr__(self):
       return f'''< 
-        Artist ID: {self.id}, 
         name: {self.name}, 
-        shows: {self.upcoming_shows}, 
-        past_shows: {self.past_shows},
+        city: {self.city},
+        state: {self.state},
+        phone: {self.phone},
+        image_link: {self.image_link},
+        facebook_link: {self.facebook_link},
+        genres: {self.genres},
+        website_link: {self.website_link},
+        seeking_venue: {self.seeking_venue},
+        seeking_description: {self.seeking_description},
         created: {self.created_at} 
       >'''
     
@@ -155,3 +184,11 @@ class Show(db.Model): # type: ignore
     __table_args__ = (
         db.UniqueConstraint('venue_id', 'artist_id', 'start_time', name='venue_artist_time_idx' ),
     )
+    
+    def __repr__(self):
+      return f'''< 
+        ID: {self.id}, 
+        venue_id: {self.venue_id}, 
+        artist_id: {self.artist_id}, 
+        start_time: {self.start_time}
+      >'''

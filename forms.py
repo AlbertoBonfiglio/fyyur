@@ -1,11 +1,13 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField, HiddenField, TimeField
-from wtforms.validators import DataRequired, AnyOf, URL, ValidationError
+from wtforms.validators import DataRequired, AnyOf, URL, ValidationError, Regexp
 from enums import GenreEnum, StateEnum
 
 # TODO [X] implement validation logic for state
 # TODO [X] implement enum restriction
+US_PHONE_NUMBER_REGEX = r'(?:\d{1}\s)?\(?(\d{3})\)?-?\s?(\d{3})-?\s?(\d{4})'
+
         
 class ShowForm(FlaskForm):
     artist_id = HiddenField(
@@ -45,7 +47,11 @@ class VenueForm(FlaskForm):
         'address', validators=[DataRequired()]
     )
     phone = StringField(
-        'phone'
+        'phone',
+        validators=[
+            DataRequired(), 
+            Regexp(US_PHONE_NUMBER_REGEX, message='Phone numbers HAS to be a valid US number') 
+            ]
     )
     image_link = StringField(
         'image_link', validators=[DataRequired(), URL()],
@@ -62,7 +68,6 @@ class VenueForm(FlaskForm):
         'website_link',
         validators=[URL()]
     )
-
     seeking_talent = BooleanField(
         'seeking_talent', 
         default=False, 
@@ -86,7 +91,11 @@ class ArtistForm(FlaskForm):
         choices= StateEnum.choices()
     )
     phone = StringField(
-        'phone'
+        'phone',
+        validators=[
+            DataRequired(), 
+            Regexp(US_PHONE_NUMBER_REGEX, message='Phone numbers HAS to be a valid US number') 
+        ]
     )
     image_link = StringField(
         'image_link', validators=[DataRequired(), URL()],

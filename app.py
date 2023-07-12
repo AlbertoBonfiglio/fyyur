@@ -11,6 +11,7 @@ import babel
 from flask import Flask
 from flask_moment import Moment
 from flask_migrate import Migrate
+from flask_wtf.csrf import CsrfProtect
 import logging
 from logging import Formatter, FileHandler
 from forms import *
@@ -28,6 +29,7 @@ app.config.from_object('config')
 db.app = app
 db.init_app(app)
 migrate = Migrate(app, db)
+CsrfProtect(app)
 router.config_routes(app)
 
 

@@ -2,13 +2,21 @@
 {% block title %}Edit Venue{% endblock %}
 {% block content %}
   <div class="form-wrapper">
-    <form class="form" method="post" action="/venues/{{venue.id}}/edit">
-      <h3 class="form-heading">Edit venue <em>{{ venue.name }}</em> 
-        <a href="{{ url_for('index') }}" title="Back to homepage"><i class="fa fa-home pull-right"></i></a>
+    <form class="form" method="post" action="/venues/{{venue_id}}/edit">
+      {{form.hidden_tag()}}
+      <h3 class="form-heading">Edit venue <em>{{ form.name.data }}</em> 
+        <a href="{{ url_for('index') }}" title="Back to homepage">
+          <i class="fa fa-home pull-right"></i>
+        </a>
       </h3>
+        {% for field, errors in form.errors.items() %}
+        <div class="alert alert-danger" role="alert">
+          {{ form[field].label }}: {{ ', '.join(errors) }}
+        </div>
+        {% endfor %}
       <div class="form-group">
         <label for="name">Name</label>
-        {{ form.name(class_ = 'form-control', autofocus = true, data = venue.name)  }}
+        {{ form.name(class_ = 'form-control', autofocus = true, data = form.name.data)  }}
       </div>
       <div class="form-group">
           <label>City & State</label>

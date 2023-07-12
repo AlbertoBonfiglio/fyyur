@@ -1,8 +1,8 @@
 """Initial
 
-Revision ID: b7fcb7e9050a
+Revision ID: 4b4722730e5c
 Revises: 
-Create Date: 2023-07-03 10:01:47.741263
+Create Date: 2023-07-12 18:11:25.241527
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'b7fcb7e9050a'
+revision = '4b4722730e5c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,13 +25,14 @@ def upgrade():
     sa.Column('state', sa.String(length=120), nullable=False),
     sa.Column('phone', sa.String(length=36), nullable=False),
     sa.Column('image_link', sa.String(length=500), server_default='https://loremflickr.com/320/240/band/all', nullable=False),
-    sa.Column('facebook_link', sa.String(length=120), nullable=True),
+    sa.Column('facebook_link', sa.String(length=120), nullable=False),
     sa.Column('genres', postgresql.ARRAY(sa.String(length=24)), nullable=False),
     sa.Column('website_link', sa.String(length=120), nullable=False),
     sa.Column('seeking_venue', sa.Boolean(), nullable=False),
     sa.Column('seeking_description', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', name='artist_name_idx')
     )
     with op.batch_alter_table('Artist', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_Artist_city'), ['city'], unique=False)
@@ -47,19 +48,35 @@ def upgrade():
     sa.Column('address', sa.String(length=120), nullable=False),
     sa.Column('phone', sa.String(length=36), nullable=False),
     sa.Column('image_link', sa.String(length=500), server_default='https://loremflickr.com/320/240/music,bar/all', nullable=False),
-    sa.Column('facebook_link', sa.String(length=120), nullable=True),
+    sa.Column('facebook_link', sa.String(length=120), nullable=False),
     sa.Column('genres', postgresql.ARRAY(sa.String(length=24)), nullable=False),
     sa.Column('website_link', sa.String(length=120), nullable=False),
     sa.Column('seeking_talent', sa.Boolean(), nullable=False),
     sa.Column('seeking_description', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name', name='venue_name_idx')
     )
     with op.batch_alter_table('Venue', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_Venue_city'), ['city'], unique=False)
         batch_op.create_index(batch_op.f('ix_Venue_created_at'), ['created_at'], unique=False)
         batch_op.create_index(batch_op.f('ix_Venue_name'), ['name'], unique=False)
         batch_op.create_index(batch_op.f('ix_Venue_state'), ['state'], unique=False)
+
+    op.create_table('Availability',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('artist_id', sa.Integer(), nullable=True),
+    sa.Column('start_time', postgresql.TIME(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('end_time', postgresql.TIME(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['artist_id'], ['Artist.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('Availability', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_Availability_artist_id'), ['artist_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_Availability_created_at'), ['created_at'], unique=False)
+        batch_op.create_index(batch_op.f('ix_Availability_end_time'), ['end_time'], unique=False)
+        batch_op.create_index(batch_op.f('ix_Availability_start_time'), ['start_time'], unique=False)
 
     op.create_table('Show',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -87,6 +104,13 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_Show_artist_id'))
 
     op.drop_table('Show')
+    with op.batch_alter_table('Availability', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_Availability_start_time'))
+        batch_op.drop_index(batch_op.f('ix_Availability_end_time'))
+        batch_op.drop_index(batch_op.f('ix_Availability_created_at'))
+        batch_op.drop_index(batch_op.f('ix_Availability_artist_id'))
+
+    op.drop_table('Availability')
     with op.batch_alter_table('Venue', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_Venue_state'))
         batch_op.drop_index(batch_op.f('ix_Venue_name'))
